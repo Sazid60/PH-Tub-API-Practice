@@ -4,8 +4,16 @@
 const btnContainer = document.getElementById('btn-container')
 // 
 const cardContainer = document.getElementById('card-container')
+const sortBtn = document.getElementById('sort-btn')
 
 let selectedCategories = 1000;
+let sortByView = false;
+
+sortBtn.addEventListener('click', ()=>{
+    sortByView = true;
+    fetchDataCategories(selectedCategories,sortByView)
+})
+
 // Fetching data for nav Bar
 const fetchCategories = async () => {
     const res = await fetch(`https://openapi.programming-hero.com/api/videos/categories`);
@@ -31,13 +39,22 @@ const displayNav = (buttons) => {
     });
 }
 // For Connecting the Buttons With the data
-const fetchDataCategories = async (categoryID) => {
+const fetchDataCategories = async (categoryID, sortByView) => {
     // console.log(`${categoryID}`)
     selectedCategories = categoryID;
     // Fetching data for cards
     const res = await fetch(`https://openapi.programming-hero.com/api/videos/category/${categoryID}`);
     const data = await res.json();
     const cards = data.data;
+    if(sortByView){
+        cards.sort((a,b) => {
+            const totalViewStrFirst = a.others?.views
+            const totalViewStrSecond = b.others?.views
+            const totalViewFirstNum =parseFloat(totalViewStrFirst.replace("k", ''))||0;
+            const totalViewSecondNum =parseFloat(totalViewStrSecond.replace("k", ''))||0;
+            return  totalViewSecondNum - totalViewFirstNum;
+        })
+    }
     // console.log(cards)
     const errorDiv = document.getElementById('error-element')
     if(cards.length === 0){
@@ -59,11 +76,38 @@ const displayCards = (cards) => {
         if(card.authors[0].verified){
         verifiedBadge = `<i class="fa-solid fa-certificate text-blue-600"></i>`
         }
+        let viewHours = '';
+if (card.others?.posted_date) {
+    const viewsInMs = parseInt(card.others.posted_date); // Convert string to integer
+    
+    // Convert milliseconds to seconds
+    const totalSeconds = viewsInMs / 1000;
+
+    // Calculate hours
+    const hours = Math.floor(totalSeconds / 3600);
+    
+    // Calculate remaining seconds after calculating the hours
+    const remainingSecondsAfterHours = totalSeconds % 3600;
+
+    // Calculate minutes
+    const minutes = Math.floor(remainingSecondsAfterHours / 60);
+
+    // Calculate remaining seconds after calculating the minutes
+    const seconds = Math.floor(remainingSecondsAfterHours % 60);
+
+    console.log(`${hours} hours, ${minutes} minutes, ${seconds} seconds`);
+
+    // Assuming viewHours is an HTML element
+    viewHours = `<p class="text-sm font-bold text-black p-1" id="">${hours} h, ${minutes} m, ${seconds} s</p>`;
+}
+
+        
+        
         containerDiv.innerHTML =`
         <div>
         <figure class="object-cover"><img class ="h-[200px] w-[300px] rounded-xl" src="${card.thumbnail}" alt="Shoes" /></figure>
-        <div class="-translate-y-9 translate-x-40 w-[120px] bg-black rounded-lg  ">
-            <p class="text-sm font-bold text-white p-1" id="">3hrs 56 min ago</p>
+        <div class="-translate-y-10 translate-x-40 w-[120px] rounded-lg shadow-lg bg-slate-300">
+            ${viewHours}
         </div>
     </div>
     <div class="card-body p-3">
@@ -72,7 +116,7 @@ const displayCards = (cards) => {
             <div>
                 <h2 class="text-lg font-bold" id="" class="card-title">${card.title}</h2>
                 <p id="" class="text-sm">${card.authors[0].profile_name} <span class="text-lg"> ${verifiedBadge} </i></span></p>
-                <p class="text-sm" id="">${card.others.views}</p>
+                <p class="text-sm" id="">${card.others?.views}</p>
             </div>
 
         </div>
@@ -82,4 +126,4 @@ const displayCards = (cards) => {
 }
 
 fetchCategories();
-fetchDataCategories(selectedCategories)
+fetchDataCategories(selectedCategories,sortByView)
